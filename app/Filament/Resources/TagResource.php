@@ -17,7 +17,8 @@ class TagResource extends Resource
 {
     protected static ?string $model = Tag::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-hashtag';
+    protected static ?string $navigationLabel = 'Tag';
 
    public static function form(Form $form): Form
     {
@@ -75,5 +76,15 @@ class TagResource extends Resource
             'create' => Pages\CreateTag::route('/create'),
             'edit' => Pages\EditTag::route('/{record}/edit'),
         ];
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return in_array(auth()->user()?->role, ['admin', 'editor']);
+    }
+
+    public static function canCreate(): bool
+    {
+        return in_array(auth()->user()?->role, ['admin', 'editor']);
     }
 }

@@ -5,11 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class Article extends Model
 {
-    use HasFactory, SoftDeletes;
-
+    use HasFactory, SoftDeletes, LogsActivity;
     protected $fillable = [
         'user_id',
         'category_id',
@@ -86,4 +87,18 @@ class Article extends Model
     {
         $this->increment('views');
     }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['title', 'status'])
+            ->logOnlyDirty()
+            ->setDescriptionForEvent(fn (string $eventName) => match ($eventName) {
+                'created' => 'membuat artikel baru',
+                'updated' => 'memperbarui artikel',
+                'deleted' => 'menghapus artikel',
+                default   => $eventName,
+            });
+    }
+
 }

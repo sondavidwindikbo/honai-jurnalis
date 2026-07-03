@@ -8,8 +8,10 @@ use App\Models\User;
 use App\Policies\ArticlePolicy;
 use App\Policies\CommentPolicy;
 use App\Policies\UserPolicy;
+use App\Observers\ArticleObserver;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -29,5 +31,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Article::class, ArticlePolicy::class);
         Gate::policy(Comment::class, CommentPolicy::class);
         Gate::policy(User::class, UserPolicy::class);
+        Article::observe(ArticleObserver::class);
     }
 }

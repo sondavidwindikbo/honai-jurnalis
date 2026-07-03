@@ -72,6 +72,42 @@
                 — SELESAI —
             </div>
 
+            {{-- Share --}}
+            <div style="margin:20px 0 32px;padding:16px;background:var(--paper2);
+                        border:1px solid var(--border);display:flex;align-items:center;
+                        gap:12px;flex-wrap:wrap;">
+                <span style="font-family:'JetBrains Mono',monospace;font-size:11px;
+                            letter-spacing:.06em;color:var(--muted);">BAGIKAN:</span>
+
+                @php $url = urlencode(request()->url()); $title = urlencode($article->title); @endphp
+
+                <a href="https://www.facebook.com/sharer/sharer.php?u={{ $url }}"
+                wire:click="share('facebook')"
+                target="_blank"
+                style="background:#1877F2;color:white;padding:7px 16px;font-family:'JetBrains Mono',monospace;
+                        font-size:11px;text-decoration:none;letter-spacing:.04em;">
+                    Facebook
+                </a>
+                <a href="https://twitter.com/intent/tweet?url={{ $url }}&text={{ $title }}"
+                wire:click="share('twitter')"
+                target="_blank"
+                style="background:#000;color:white;padding:7px 16px;font-family:'JetBrains Mono',monospace;
+                        font-size:11px;text-decoration:none;letter-spacing:.04em;">
+                    X / Twitter
+                </a>
+                <a href="https://wa.me/?text={{ $title }}%20{{ $url }}"
+                wire:click="share('whatsapp')"
+                target="_blank"
+                style="background:#25D366;color:white;padding:7px 16px;font-family:'JetBrains Mono',monospace;
+                        font-size:11px;text-decoration:none;letter-spacing:.04em;">
+                    WhatsApp
+                </a>
+
+                <span style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);">
+                    {{ $article->shares }} kali dibagikan
+                </span>
+            </div>
+
             {{-- ===== KOMENTAR ===== --}}
             <div id="komentar">
                 <div class="section-header">

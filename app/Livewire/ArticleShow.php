@@ -83,4 +83,9 @@ class ArticleShow extends Component
             'title' => $this->article->title . ' — Honai Jurnalis Kampung',
         ]);
     }
+
+    public function share(string $platform): void
+    {
+        $this->article->increment('shares');
+    }
 }

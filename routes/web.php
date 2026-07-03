@@ -40,3 +40,14 @@ Route::get('/', Home::class)->name('home');
 Route::get('/artikel/{article:slug}', ArticleShow::class)->name('article.show');
 Route::get('/kategori/{categorySlug}', ArticleList::class)->name('category.show');
 Route::get('/cari', ArticleList::class)->name('search');
+
+// Redirect otomatis sesuai role setelah login
+Route::middleware('auth')->get('/redirect-panel', function () {
+    $role = auth()->user()->role;
+    return match ($role) {
+        'admin'   => redirect('/admin'),
+        'editor'  => redirect('/editor'),
+        'penulis' => redirect('/penulis'),
+        default   => redirect('/'),
+    };
+})->name('panel.redirect');

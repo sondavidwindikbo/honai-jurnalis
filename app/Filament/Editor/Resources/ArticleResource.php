@@ -1,0 +1,212 @@
+<?php
+
+namespace App\Filament\Editor\Resources;
+
+use App\Filament\Editor\Resources\ArticleResource\Pages;
+use App\Filament\Resources\ArticleResource\RelationManagers;
+use App\Models\Article;
+use Filament\Forms;
+use Filament\Forms\Form;
+use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Select;
+use Illuminate\Support\Str;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
+
+class ArticleResource extends Resource
+{
+    protected static ?string $model = Article::class;
+
+    protected static ?string $navigationIcon = 'heroicon-o-newspaper';
+protected static ?string $navigationLabel = 'Artikel';
+
+    public static function form(Form $form): Form
+    {
+        return $form
+            ->schema([
+                Forms\Components\Section::make('Informasi Artikel')
+                    ->schema([
+                        Forms\Components\TextInput::make('title')
+                            ->label('Judul Artikel')
+                            ->required()
+                            ->live(onBlur: true)
+                            ->afterStateUpdated(fn ($state, callable $set) =>
+                                $set('slug', Str::slug($state))
+                            )
+                            ->maxLength(255)
+                            ->columnSpanFull(),
+
+                        Forms\Components\TextInput::make('slug')
+                            ->label('Slug (URL)')
+                            ->required()
+                            ->unique(ignoreRecord: true)
+                            ->maxLength(255)
+                            ->columnSpanFull(),
+
+                        Select::make('category_id')
+                            ->label('Kategori')
+                            ->relationship('category', 'name')
+                            ->searchable()
+                            ->preload()
+                            ->required(),
+
+                        Select::make('user_id')
+                            ->label('Penulis')
+                            ->relationship('user', 'name')
+                            ->searchable()
+                            ->preload()
+                            ->required()
+                            ->default(fn () => auth()->id()),
+
+                        Select::make('tags')
+                            ->label('Tag')
+                            ->relationship('tags', 'name')
+                            ->multiple()
+                            ->searchable()
+                            ->preload()
+                            ->columnSpanFull(),
+                    ])->columns(2),
+
+                Forms\Components\Section::make('Konten')
+                    ->schema([
+                        Forms\Components\Textarea::make('excerpt')
+                            ->label('Ringkasan Singkat')
+                            ->rows(2)
+                            ->maxLength(500)
+                            ->columnSpanFull(),
+
+                        RichEditor::make('content')
+                            ->label('Isi Artikel')
+                            ->required()
+                            ->columnSpanFull(),
+
+                        FileUpload::make('cover_image')
+                            ->label('Foto Sampul')
+                            ->image()
+                            ->directory('articles')
+                            ->columnSpanFull(),
+                    ]),
+
+                Forms\Components\Section::make('Status & Publikasi')
+                    ->schema([
+                        Forms\Components\Select::make('status')
+                            ->label('Status')
+                            ->options(function () {
+                                $user = auth()->user();
+                                if ($user->role === 'penulis') {
+                                    return [
+                                        'draft'   => 'Draft',
+                                        'pending' => 'Kirim untuk Review',
+                                    ];
+                                }
+                                return [
+                                    'draft'     => 'Draft',
+                                    'pending'   => 'Menunggu Review',
+                                    'published' => 'Diterbitkan',
+                                    'rejected'  => 'Ditolak',
+                                ];
+                            })
+                            ->default('draft')
+                            ->required(),
+                    ])->columns(3),
+            ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                Tables\Columns\ImageColumn::make('cover_image')
+                    ->label('Foto'),
+
+                Tables\Columns\TextColumn::make('title')
+                    ->label('Judul')
+                    ->searchable()
+                    ->sortable()
+                    ->limit(40),
+
+                Tables\Columns\TextColumn::make('category.name')
+                    ->label('Kategori')
+                    ->badge(),
+
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label('Penulis')
+                    ->searchable(),
+
+                Tables\Columns\TextColumn::make('status')
+                    ->label('Status')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'draft'     => 'gray',
+                        'pending'   => 'warning',
+                        'published' => 'success',
+                        'rejected'  => 'danger',
+                    }),
+
+                Tables\Columns\TextColumn::make('views')
+                    ->label('Dilihat')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('published_at')
+                    ->label('Tgl Terbit')
+                    ->dateTime('d M Y')
+                    ->sortable(),
+            ])
+            ->filters([
+                Tables\Filters\SelectFilter::make('status')
+                    ->options([
+                        'draft'     => 'Draft',
+                        'pending'   => 'Menunggu Review',
+                        'published' => 'Diterbitkan',
+                        'rejected'  => 'Ditolak',
+                    ]),
+                Tables\Filters\SelectFilter::make('category_id')
+                    ->label('Kategori')
+                    ->relationship('category', 'name'),
+            ])
+            ->actions([
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ])
+            ->defaultSort('created_at', 'desc');
+    }
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        $user = auth()->user();
+
+        // Kalau penulis, hanya tampilkan artikel miliknya sendiri
+        if ($user->role === 'penulis') {
+            $query->where('user_id', $user->id);
+        }
+
+        return $query;
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            //
+        ];
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListArticles::route('/'),
+            'create' => Pages\CreateArticle::route('/create'),
+            'edit' => Pages\EditArticle::route('/{record}/edit'),
+        ];
+    }
+}

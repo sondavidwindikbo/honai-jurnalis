@@ -34,10 +34,29 @@ class User extends Authenticatable implements FilamentUser
         ];
     }
 
+    public function getFilamentDefaultPanel(): string
+    {
+        return match ($this->role) {
+            'admin'   => 'admin',
+            'editor'  => 'editor',
+            'penulis' => 'penulis',
+            default   => 'penulis',
+        };
+    }
+
     // INI YANG BARU — dipanggil otomatis oleh Filament saat login
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->is_active;
+        // Cek is_active dulu untuk semua panel
+        if (!$this->is_active) return false;
+
+        // Tiap role hanya boleh masuk panel miliknya
+        return match ($panel->getId()) {
+            'admin'   => $this->role === 'admin',
+            'editor'  => $this->role === 'editor',
+            'penulis' => $this->role === 'penulis',
+            default   => false,
+        };
     }
 
     // relasi & method lain tetap sama seperti sebelumnya
