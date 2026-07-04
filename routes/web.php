@@ -51,3 +51,18 @@ Route::middleware('auth')->get('/redirect-panel', function () {
         default   => redirect('/'),
     };
 })->name('panel.redirect');
+
+// Override logout untuk panel editor & penulis
+Route::post('/editor/logout', function () {
+    auth()->logout();
+    request()->session()->invalidate();
+    request()->session()->regenerateToken();
+    return redirect('/editor/login');
+})->name('filament.editor.auth.logout')->middleware('web');
+
+Route::post('/penulis/logout', function () {
+    auth()->logout();
+    request()->session()->invalidate();
+    request()->session()->regenerateToken();
+    return redirect('/penulis/login');
+})->name('filament.penulis.auth.logout')->middleware('web');

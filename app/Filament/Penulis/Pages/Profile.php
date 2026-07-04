@@ -19,10 +19,7 @@ class Profile extends Page implements HasForms
     protected static ?string $navigationLabel = 'Profil Saya';
     protected static string  $view            = 'filament.pages.profile';
 
-    // Data form profil
-    public ?array $profileData = [];
-
-    // Data form password (terpisah)
+    public ?array $profileData  = [];
     public ?array $passwordData = [];
 
     public function mount(): void
@@ -33,11 +30,11 @@ class Profile extends Page implements HasForms
         $this->profileForm->fill([
             'name'         => $user->name,
             'email'        => $user->email,
-            'bio'          => $profile?->bio,
             'phone'        => $profile?->phone,
+            'bio'          => $profile?->bio,
+            'address'      => $profile?->address,
             'instagram'    => $profile?->instagram,
             'facebook'     => $profile?->facebook,
-            'address'      => $profile?->address,
             'joined_honai' => $profile?->joined_honai?->format('Y-m-d'),
         ]);
     }
@@ -55,16 +52,23 @@ class Profile extends Page implements HasForms
                     ->schema([
                         Forms\Components\TextInput::make('name')
                             ->label('Nama Lengkap')
-                            ->required(),
+                            ->required()
+                            ->maxLength(255),
                         Forms\Components\TextInput::make('email')
                             ->label('Email')
                             ->email()
                             ->required()
-                            ->unique('users', 'email', ignorable: auth()->user()),
+                            ->unique(
+                                table: 'users',
+                                column: 'email',
+                                ignorable: auth()->user()
+                            ),
                         Forms\Components\TextInput::make('phone')
-                            ->label('Nomor HP'),
+                            ->label('Nomor HP')
+                            ->tel(),
                         Forms\Components\DatePicker::make('joined_honai')
-                            ->label('Bergabung dengan Honai sejak'),
+                            ->label('Bergabung dengan Honai sejak')
+                            ->displayFormat('d/m/Y'),
                     ])->columns(2),
 
                 Forms\Components\Section::make('Bio')
@@ -80,7 +84,8 @@ class Profile extends Page implements HasForms
                 Forms\Components\Section::make('Media Sosial')
                     ->schema([
                         Forms\Components\TextInput::make('instagram')
-                            ->label('Instagram'),
+                            ->label('Instagram')
+                            ->prefix('@'),
                         Forms\Components\TextInput::make('facebook')
                             ->label('Facebook'),
                     ])->columns(2),
@@ -97,17 +102,23 @@ class Profile extends Page implements HasForms
                         Forms\Components\TextInput::make('current_password')
                             ->label('Password Saat Ini')
                             ->password()
+                            ->revealable()
                             ->required()
                             ->currentPassword(),
+
                         Forms\Components\TextInput::make('new_password')
                             ->label('Password Baru')
                             ->password()
+                            ->revealable()
                             ->required()
                             ->rule(Password::min(8))
-                            ->different('current_password'),
+                            ->different('current_password')
+                            ->helperText('Minimal 8 karakter'),
+
                         Forms\Components\TextInput::make('new_password_confirmation')
                             ->label('Konfirmasi Password Baru')
                             ->password()
+                            ->revealable()
                             ->required()
                             ->same('new_password'),
                     ])->columns(3),
@@ -120,20 +131,22 @@ class Profile extends Page implements HasForms
         $data = $this->profileForm->getState();
         $user = auth()->user();
 
+        // Update data user
         $user->update([
             'name'  => $data['name'],
             'email' => $data['email'],
         ]);
 
+        // Update atau buat profil
         $user->profile()->updateOrCreate(
             ['user_id' => $user->id],
             [
-                'bio'          => $data['bio'],
-                'phone'        => $data['phone'],
-                'instagram'    => $data['instagram'],
-                'facebook'     => $data['facebook'],
-                'address'      => $data['address'],
-                'joined_honai' => $data['joined_honai'],
+                'phone'        => $data['phone'] ?? null,
+                'bio'          => $data['bio'] ?? null,
+                'address'      => $data['address'] ?? null,
+                'instagram'    => $data['instagram'] ?? null,
+                'facebook'     => $data['facebook'] ?? null,
+                'joined_honai' => $data['joined_honai'] ?? null,
             ]
         );
 
@@ -151,10 +164,16 @@ class Profile extends Page implements HasForms
             'password' => Hash::make($data['new_password']),
         ]);
 
-        $this->passwordForm->fill();
+        // Reset form password setelah berhasil
+        $this->passwordForm->fill([
+            'current_password'          => '',
+            'new_password'              => '',
+            'new_password_confirmation' => '',
+        ]);
 
         Notification::make()
             ->title('Password berhasil diubah!')
+            ->body('Gunakan password baru kamu untuk login berikutnya.')
             ->success()
             ->send();
     }

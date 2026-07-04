@@ -89,4 +89,9 @@ class User extends Authenticatable implements FilamentUser
     {
         return $this->role === 'penulis';
     }
+
+    // public function routeNotificationForDatabase(): string
+    // {
+    //     return $this->getKey();
+    // }
 }
