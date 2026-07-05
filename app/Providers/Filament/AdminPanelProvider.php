@@ -66,7 +66,9 @@ class AdminPanelProvider extends PanelProvider
                 Widgets\AccountWidget::class,
                 Widgets\FilamentInfoWidget::class,
                 \App\Filament\Widgets\StatsOverview::class,
-            ])
+                \App\Filament\Widgets\AdminArticleChart::class,
+                \App\Filament\Widgets\AdminArticleDistribution::class,
+                ])
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

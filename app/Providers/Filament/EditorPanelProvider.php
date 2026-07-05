@@ -57,6 +57,7 @@ class EditorPanelProvider extends PanelProvider
             ->pages([Pages\Dashboard::class])
             ->widgets([
                 \App\Filament\Widgets\StatsOverview::class,
+                \App\Filament\Widgets\EditorArticleChart::class,
             ])
             ->middleware([
                 EncryptCookies::class,
