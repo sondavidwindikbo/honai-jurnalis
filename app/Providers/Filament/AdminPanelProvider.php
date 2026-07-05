@@ -28,6 +28,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->passwordReset()
             ->homeUrl('/redirect-panel')
             ->brandName('Honai Jurnalis Kampung')
             ->brandLogo(function () {

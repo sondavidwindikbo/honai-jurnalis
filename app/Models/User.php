@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
+
 class User extends Authenticatable implements FilamentUser
 {
     use HasFactory, Notifiable;
@@ -89,7 +90,6 @@ class User extends Authenticatable implements FilamentUser
     {
         return $this->role === 'penulis';
     }
-
     // public function routeNotificationForDatabase(): string
     // {
     //     return $this->getKey();

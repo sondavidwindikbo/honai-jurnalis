@@ -2,9 +2,11 @@
 
 namespace App\Observers;
 
+use App\Mail\ArticleStatusMail;
 use App\Models\Article;
 use App\Models\User;
 use App\Notifications\ArticleNotification;
+use Illuminate\Support\Facades\Mail;
 
 class ArticleObserver
 {
@@ -21,6 +23,7 @@ class ArticleObserver
         // ── DRAFT → PENDING ──────────────────────────────────────────
         if ($oldStatus === 'draft' && $newStatus === 'pending') {
 
+            // 🔔 Notif bell ke penulis
             $penulis->notify(new ArticleNotification(
                 title: 'Artikel berhasil dikirim',
                 body:  "Artikel \"{$article->title}\" sedang menunggu review editor.",
@@ -30,6 +33,7 @@ class ArticleObserver
             ));
 
             foreach ($editors as $editor) {
+                // 🔔 Notif bell ke editor
                 $editor->notify(new ArticleNotification(
                     title: 'Artikel baru menunggu review',
                     body:  "{$penulis->name} mengirim \"{$article->title}\".",
@@ -37,9 +41,14 @@ class ArticleObserver
                     icon:  'heroicon-o-document-text',
                     url:   "/editor/articles/{$article->id}/edit",
                 ));
+
+                // 📧 Email ke editor
+                Mail::to($editor->email)
+                    ->send(new ArticleStatusMail($article, 'submitted', 'editor'));
             }
 
             foreach ($admins as $admin) {
+                // 🔔 Notif bell ke admin (monitoring)
                 $admin->notify(new ArticleNotification(
                     title: 'Artikel baru dikirim penulis',
                     body:  "{$penulis->name}: \"{$article->title}\" menunggu review.",
@@ -52,6 +61,7 @@ class ArticleObserver
         // ── PENDING → PUBLISHED ──────────────────────────────────────
         if ($oldStatus === 'pending' && $newStatus === 'published') {
 
+            // 🔔 Notif bell ke penulis
             $penulis->notify(new ArticleNotification(
                 title: 'Artikel berhasil diterbitkan!',
                 body:  "Artikel \"{$article->title}\" sudah tayang di website.",
@@ -60,7 +70,12 @@ class ArticleObserver
                 url:   route('article.show', $article->slug),
             ));
 
+            // 📧 Email ke penulis
+            Mail::to($penulis->email)
+                ->send(new ArticleStatusMail($article, 'published', 'penulis'));
+
             foreach ($admins as $admin) {
+                // 🔔 Notif bell ke admin
                 $admin->notify(new ArticleNotification(
                     title: 'Artikel diterbitkan',
                     body:  "Editor menerbitkan \"{$article->title}\" oleh {$penulis->name}.",
@@ -73,6 +88,7 @@ class ArticleObserver
         // ── PENDING → REJECTED ───────────────────────────────────────
         if ($oldStatus === 'pending' && $newStatus === 'rejected') {
 
+            // 🔔 Notif bell ke penulis
             $penulis->notify(new ArticleNotification(
                 title: 'Artikel perlu direvisi',
                 body:  "Artikel \"{$article->title}\" dikembalikan editor untuk diperbaiki.",
@@ -80,6 +96,10 @@ class ArticleObserver
                 icon:  'heroicon-o-arrow-uturn-left',
                 url:   "/penulis/articles/{$article->id}/edit",
             ));
+
+            // 📧 Email ke penulis
+            Mail::to($penulis->email)
+                ->send(new ArticleStatusMail($article, 'rejected', 'penulis'));
 
             foreach ($admins as $admin) {
                 $admin->notify(new ArticleNotification(
@@ -95,6 +115,7 @@ class ArticleObserver
         if ($oldStatus === 'rejected' && $newStatus === 'pending') {
 
             foreach ($editors as $editor) {
+                // 🔔 Notif bell ke editor
                 $editor->notify(new ArticleNotification(
                     title: 'Revisi artikel dikirim ulang',
                     body:  "{$penulis->name} mengirim ulang revisi \"{$article->title}\".",
@@ -102,6 +123,10 @@ class ArticleObserver
                     icon:  'heroicon-o-arrow-path',
                     url:   "/editor/articles/{$article->id}/edit",
                 ));
+
+                // 📧 Email ke editor
+                Mail::to($editor->email)
+                    ->send(new ArticleStatusMail($article, 'revision', 'editor'));
             }
         }
     }

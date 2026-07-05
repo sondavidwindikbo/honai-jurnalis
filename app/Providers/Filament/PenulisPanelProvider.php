@@ -25,6 +25,7 @@ class PenulisPanelProvider extends PanelProvider
             ->id('penulis')
             ->path('penulis')
             ->login()
+            ->passwordReset()
             ->homeUrl('/redirect-panel')
             ->brandName('Honai Jurnalis — Penulis')
             ->brandLogo(function () {

@@ -26,6 +26,7 @@ class EditorPanelProvider extends PanelProvider
             ->id('editor')
             ->path('editor')
             ->login()
+            ->passwordReset()
             ->homeUrl('/redirect-panel')
             ->brandName('Honai Jurnalis — Editor')
             ->brandLogo(function () {
